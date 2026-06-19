@@ -1,0 +1,29 @@
+from fastapi import FastAPI
+from langchain_groq import ChatGroq
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import ChatPromptTemplate
+from langserve import add_routes
+import os
+from dotenv import load_dotenv
+load_dotenv()
+groq_api_key = os.getenv("GROQ_API_KEY")
+model = ChatGroq(model="llama-3.1-8b-instant", groq_api_key=groq_api_key)
+generic_template= "Translate the following into {language}:"
+prompt = ChatPromptTemplate.from_messages([
+    ("system", generic_template),
+    ("user", "{text}")
+])
+output_parser = StrOutputParser()
+chain = prompt | model | output_parser
+
+app = FastAPI(title="LangServe Example", description="An example of using LangServe with FastAPI and Groq's LLMs.", version="0.1.0")
+
+add_routes( 
+    app,
+    chain,
+    path="/chain",
+)
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="localhost", port=8000)
